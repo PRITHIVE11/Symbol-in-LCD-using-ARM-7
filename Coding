@@ -1,0 +1,76 @@
+#include<LPC21xx.h>
+#define LCD_D 0xff<<0
+#define RS 1<<8
+#define E 1<<9
+
+void LCD_INIT(void);
+void LCD_CMD(unsigned char);
+void LCD_DATA(unsigned char);
+
+
+unsigned char cgram_lut[]={0x17,0x14,0x14,0x1F,0x05,0x05,0x1D,0x00};
+void CGRAM_WRITE(void);
+
+int main()
+{
+	LCD_INIT();//Initialize the LCD
+	CGRAM_WRITE();//Write the look-up table bytes into CGRAM
+	LCD_CMD(0x80);
+	LCD_DATA(0);//To display custom symbol-0
+
+}
+
+void CGRAM_WRITE(void)
+{
+	char i;
+	LCD_CMD(0x40);//Select starting address of CGRAM
+	
+	/*Write the custom symbol bytes to CGRAM*/
+	
+	for(i=0;i<8;i++)
+	LCD_DATA(cgram_lut[i]);
+	
+}
+void delay_milliseconds(int msec)
+{
+T0PR=15000-1;
+T0TCR=0x01;
+while(T0TC<msec);
+T0TCR=0x03;
+T0TCR=0x00;
+}
+
+
+
+void LCD_INIT(void)
+{
+	IODIR0=LCD_D|RS|E;//P0.0 to P0.9 as Output pins
+	LCD_CMD(0x01);//To clear the display
+	LCD_CMD(0x02);//Return cursor to home position
+	LCD_CMD(0x38);//8-bit interfacing mode with both lines
+	LCD_CMD(0x0C);//Display ON,Cursor Off
+	LCD_CMD(0x80);//Select starting address of DDRAM
+	
+}
+
+void LCD_CMD(unsigned char cmd)
+{
+	IOCLR0=LCD_D;//clear the data pins
+	IOSET0=cmd;//assigning command to the data pins
+	IOCLR0=RS;//command register is selected
+	IOSET0=E;//latch the data to the LCD
+	delay_milliseconds(2);//LCD is in internal operation mode
+	IOCLR0=E;//To re-latch the next byte
+	
+}
+
+void LCD_DATA(unsigned char d)
+{
+	IOCLR0=LCD_D;
+	IOSET0=d;//Assigning data to the data pins
+	IOSET0=RS;//data register is selected
+	IOSET0=E;//latch the data to LCD
+	delay_milliseconds(2);//LCD is in internal operation mode
+	IOCLR0=E;//To re-latch the next byte
+	
+}
